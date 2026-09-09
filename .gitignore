@@ -1,0 +1,87 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100/
+.Trashes/
+
+# Swift Package Manager
+.build/
+.build-*/
+Packages/
+Package.pins
+
+# Keep SwiftPM dependency pins visible when generated.
+!Package.resolved
+.swiftpm/*
+!.swiftpm/configuration/
+.swiftpm/configuration/*
+!.swiftpm/configuration/Package.resolved
+
+# Xcode
+build/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+*.hmap
+*.ipa
+*.xcarchive
+*.dSYM
+*.dSYM.zip
+
+# XCTest and coverage
+TestResults/
+*.xcresult
+*.xctest
+*.profraw
+*.profdata
+.coverage/
+coverage/
+
+# Swift DocC
+*.doccarchive/
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace/
+*.playground/xcuserdata/
+
+# Dependency managers commonly present around iOS projects
+Pods/
+Carthage/Build/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local environment and logs
+.env
+.env.*
+!.env.example
+*.log
+
+# Agent local overrides
+AGENTS.local.md
+CLAUDE.local.md
+.claude/settings.local.json
+.cursor/mcp.json

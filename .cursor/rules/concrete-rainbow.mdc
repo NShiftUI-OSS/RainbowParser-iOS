@@ -1,0 +1,12 @@
+---
+description: Mobile RainbowParser accepts concrete Rainbow only; placeholders stay in Rust
+alwaysApply: true
+---
+
+# Rainbow concreto (iOS)
+
+Este pacote é o parser **mobile**. Não implemente furos `#{Name}` nem API de expand.
+
+- Substituição de templates é exclusividade de `RainbowParser-Rust` (API global do backend).
+- O frontend recebe Rainbow já expandido: `use Name@MAJOR.MINOR.PATCH`, nomes de nó identificadores, enum `.name`, `@LANG(...)` com body real.
+- Ver `Docs/Harness/Decisions.md` D8 e `Docs/Harness/Architecture.md`.
