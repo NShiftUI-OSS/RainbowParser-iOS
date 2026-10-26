@@ -85,3 +85,6 @@ AGENTS.local.md
 CLAUDE.local.md
 .claude/settings.local.json
 .cursor/mcp.json
+
+# CI version overlay working dir (never commit)
+.ci-version/
