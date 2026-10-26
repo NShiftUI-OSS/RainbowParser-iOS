@@ -128,7 +128,7 @@ import Testing
     let source = #"Button(title: "Entrar") { OnTap {} }"#
     let document = try parser.decode(source)
 
-    #expect(RainbowParserVersion.current == "0.1.0-beta.1")
+    #expect(RainbowParserVersion.current == "0.2.0-beta.1")
     #expect(parser.encode(document) == """
     Button(title: "Entrar") {
       OnTap {
