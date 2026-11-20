@@ -311,6 +311,17 @@ Button(title: "Entrar") {
 }
 ```
 
+Plugins and events with no parameters still print as constructors (`Spinner()`). An object with two or more fields breaks, and the closing `)` lines up with the parameter that opened it:
+
+```rainbow
+VerticalStack(
+  style: (
+    alignment: .leading,
+    spacing: 12
+  )
+)
+```
+
 This is intentional for the beta. Lossless round-trip formatting, comments and trivia preservation are out of scope for `0.1.0-beta.1`.
 
 ## Thread Safety And Concurrency

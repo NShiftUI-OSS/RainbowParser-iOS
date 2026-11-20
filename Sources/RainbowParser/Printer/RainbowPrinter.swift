@@ -33,8 +33,9 @@ struct RainbowPrinter: Sendable {
         pushLeading(&parts, node.leading, level: level)
 
         var header = indent + node.name
+        let emitConstructor = !isTriggerNodeName(node.name)
 
-        if !node.parameters.isEmpty {
+        if !node.parameters.isEmpty || emitConstructor {
             if shouldBreakParameters(node) {
                 header += "("
                 parts.append(header)
@@ -50,9 +51,11 @@ struct RainbowPrinter: Sendable {
                 parts.append(indent + ")")
             } else {
                 header += "("
-                header += node.parameters
-                    .map { printParameterInline($0, continuationIndent: indentation(level + 1)) }
-                    .joined(separator: ", ")
+                if !node.parameters.isEmpty {
+                    header += node.parameters
+                        .map { printParameterInline($0, continuationIndent: indentation(level + 1)) }
+                        .joined(separator: ", ")
+                }
                 header += ")"
                 parts.append(header)
             }
@@ -141,12 +144,7 @@ struct RainbowPrinter: Sendable {
                 + values.map { printValue($0, continuationIndent: continuationIndent) }
                 .joined(separator: ", ") + "]"
         case let .object(entries):
-            let printedEntries = entries
-                .map {
-                    "\(printObjectKey($0.key)): \(printValue($0.value, continuationIndent: continuationIndent))"
-                }
-                .joined(separator: ", ")
-            return "(" + printedEntries + ")"
+            return printObject(entries, continuationIndent: continuationIndent)
         case .null:
             return "null"
         }
@@ -170,6 +168,45 @@ struct RainbowPrinter: Sendable {
         }
         output += ")"
         return output
+    }
+
+    private func printObject(
+        _ entries: [RainbowObjectEntry],
+        continuationIndent: String
+    ) -> String {
+        if !objectNeedsBreak(entries) {
+            let printedEntries = entries
+                .map {
+                    "\(printObjectKey($0.key)): \(printValue($0.value, continuationIndent: continuationIndent))"
+                }
+                .joined(separator: ", ")
+            return "(\(printedEntries))"
+        }
+
+        let inner = continuationIndent + style.indentation
+        var lines = ["("]
+        for (index, entry) in entries.enumerated() {
+            var entryLines = printObjectEntryLines(entry, indent: inner)
+            if index != entries.count - 1, var last = entryLines.popLast() {
+                last += ","
+                entryLines.append(last)
+            }
+            lines.append(contentsOf: entryLines)
+        }
+        lines.append(continuationIndent + ")")
+        return lines.joined(separator: style.newline)
+    }
+
+    private func printObjectEntryLines(_ entry: RainbowObjectEntry, indent: String) -> [String] {
+        let value = printValue(entry.value, continuationIndent: indent)
+        let valueLines = value.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        let key = printObjectKey(entry.key)
+        if valueLines.count <= 1 {
+            return ["\(indent)\(key): \(value)"]
+        }
+        var lines = ["\(indent)\(key): \(valueLines[0])"]
+        lines.append(contentsOf: valueLines.dropFirst())
+        return lines
     }
 
     private func printObjectKey(_ key: String) -> String {
@@ -207,18 +244,29 @@ struct RainbowPrinter: Sendable {
 }
 
 private func shouldBreakParameters(_ node: RainbowNode) -> Bool {
+    guard !node.parameters.isEmpty else { return false }
+    let complex = node.parameters.contains { valueNeedsBreak($0.value) }
     if isTriggerNodeName(node.name) {
+        return complex
+    }
+    return node.parameters.count >= 2 || complex
+}
+
+private func valueNeedsBreak(_ value: RainbowValue) -> Bool {
+    switch value {
+    case let .tagged(_, .text(text), _):
+        return text.contains("\n")
+    case let .object(entries):
+        return objectNeedsBreak(entries)
+    case let .array(values):
+        return values.contains { valueNeedsBreak($0) }
+    default:
         return false
     }
-    if node.parameters.count >= 2 {
-        return true
-    }
-    return node.parameters.contains { parameter in
-        if case let .tagged(_, .text(text), _) = parameter.value {
-            return text.contains("\n")
-        }
-        return false
-    }
+}
+
+private func objectNeedsBreak(_ entries: [RainbowObjectEntry]) -> Bool {
+    entries.count >= 2 || entries.contains { valueNeedsBreak($0.value) }
 }
 
 private func isTriggerNodeName(_ name: String) -> Bool {

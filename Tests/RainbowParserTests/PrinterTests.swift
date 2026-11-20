@@ -40,7 +40,9 @@ import Testing
                         RainbowParameter(name: "variant", value: .identifier("primary")),
                     ],
                     children: [
-                        RainbowNode(name: "OnTap", block: RainbowBlock()),
+                        RainbowNode(name: "OnTap", children: [
+                            RainbowNode(name: "Navigate"),
+                        ]),
                     ]
                 ),
             ]
@@ -56,6 +58,7 @@ import Testing
                 variant: .primary
               ) {
                 OnTap {
+                  Navigate()
                 }
               }
             }
@@ -106,7 +109,17 @@ import Testing
               disabled: false,
               variant: .primary,
               items: ["a", 1, null],
-              meta: (id: "home", "dash-key": false, "": 0, "1bad": 1, "a-": 2, "😀": 3, _id: 4, A1: 5, "a😀": 6)
+              meta: (
+                id: "home",
+                "dash-key": false,
+                "": 0,
+                "1bad": 1,
+                "a-": 2,
+                "😀": 3,
+                _id: 4,
+                A1: 5,
+                "a😀": 6
+              )
             )
             """
     )
@@ -120,7 +133,7 @@ import Testing
     ])
     let style = RainbowFormatStyle(indentation: "    ", newline: "\r\n")
 
-    #expect(RainbowEncoder(style: style).encode(document) == "Root {\r\n    Child\r\n}")
+    #expect(RainbowEncoder(style: style).encode(document) == "Root() {\r\n    Child()\r\n}")
 }
 
 @Test func parserFacadeEncodesAndDecodes() throws {
@@ -135,6 +148,77 @@ import Testing
       }
     }
     """)
+}
+
+@Test func printerBreaksObjectFieldsAndEmitsConstructors() throws {
+    let source = """
+    Screen(
+      navigationBar: (title: "Feedback", theme: "amber", leading: "back"),
+      scroll: (enabled: true, fastRefresh: true)
+    ) {
+      VerticalStack(style: (alignment: .leading, spacing: 12)) {
+        Progress(value: 0.66)
+        Spinner
+        Separator
+      }
+    }
+    """
+    let formatted = try RainbowParser().encode(RainbowParser().decode(source))
+
+    #expect(formatted == """
+    Screen(
+      navigationBar: (
+        title: "Feedback",
+        theme: "amber",
+        leading: "back"
+      ),
+      scroll: (
+        enabled: true,
+        fastRefresh: true
+      )
+    ) {
+      VerticalStack(
+        style: (
+          alignment: .leading,
+          spacing: 12
+        )
+      ) {
+        Progress(value: 0.66)
+
+        Spinner()
+
+        Separator()
+      }
+    }
+    """)
+}
+
+@Test func printerBreaksNestedObjectsAtEveryLevel() throws {
+    let formatted = try RainbowParser().encode(
+        RainbowParser().decode(
+            "VerticalStack(style: (alignment: (horizontal: .leading, vertical: .center), spacing: 12))"
+        )
+    )
+
+    #expect(formatted == """
+    VerticalStack(
+      style: (
+        alignment: (
+          horizontal: .leading,
+          vertical: .center
+        ),
+        spacing: 12
+      )
+    )
+    """)
+}
+
+@Test func printerKeepsSingleFieldObjectsAndScalarsCompact() throws {
+    let parser = RainbowParser()
+    #expect(try parser.encode(parser.decode(#"Node(meta: (id: "home"))"#)) == #"Node(meta: (id: "home"))"#)
+    #expect(try parser.encode(parser.decode("Progress(value: 0.66)")) == "Progress(value: 0.66)")
+    #expect(try parser.encode(parser.decode("Spinner")) == "Spinner()")
+    #expect(try parser.encode(parser.decode("Separator()")) == "Separator()")
 }
 
 @Test func emptyDocumentEncodesToEmptyString() {

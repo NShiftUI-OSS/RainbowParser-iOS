@@ -17,9 +17,11 @@
 ## D3 — Encode canônico (com leading trivia)
 
 **Decisão:** printer normaliza indentação/espaços e força linha em branco entre
-irmãos. Comentários `//` de linha inteira imediatamente antes de `use` / nó /
-parâmetro são preservados (leading trivia). Comentários no fim da mesma linha
-que código ficam fora do v1.
+irmãos. Plugins e events saem sempre como construtor (`Spinner()`). Objetos
+com dois ou mais campos quebram linha; o `)` fecha no indent de quem abriu o
+objeto. Um campo só fica compacto. Comentários `//` de linha inteira
+imediatamente antes de `use` / nó / parâmetro são preservados (leading trivia).
+Comentários no fim da mesma linha que código ficam fora do v1.
 
 **Por quê:** escopo `0.1.0-beta.1`; round-trip estrutural é suficiente.
 
