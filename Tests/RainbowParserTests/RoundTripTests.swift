@@ -29,7 +29,7 @@ import Testing
             """
             use Screen@1.0.0
             // root comment
-            Screen() {
+            Screen {
               Text(text: "a")
               // between plugins
               Button(title: "b")
@@ -38,7 +38,7 @@ import Testing
         )
     )
 
-    #expect(formatted.contains("use Screen@1.0.0\n\n// root comment\nScreen() {"))
+    #expect(formatted.contains("use Screen@1.0.0\n\n// root comment\nScreen {"))
     #expect(formatted.contains("Text(text: \"a\")\n\n  // between plugins\n  Button(title: \"b\")"))
 }
 

@@ -105,6 +105,15 @@ struct RainbowSyntaxParser {
         var anchor = previous.range.end.line
         let block: RainbowBlock?
         if check(.leftBrace) {
+            if hadParentheses && parameters.isEmpty {
+                diagnostics.append(
+                    RainbowDiagnostic(
+                        code: "rainbow.parser.emptyConstructorBlock",
+                        message: "A children block does not take empty parentheses. Write the name and '{', not '()'.",
+                        range: previous.range
+                    )
+                )
+            }
             if peek.range.start.line != anchor {
                 diagnostics.append(
                     RainbowDiagnostic(

@@ -134,7 +134,7 @@ import Testing
     ])
     let style = RainbowFormatStyle(indentation: "    ", newline: "\r\n")
 
-    #expect(RainbowEncoder(style: style).encode(document) == "Root() {\r\n    Child()\r\n}")
+    #expect(RainbowEncoder(style: style).encode(document) == "Root {\r\n    Child()\r\n}")
 }
 
 @Test func parserFacadeEncodesAndDecodes() throws {

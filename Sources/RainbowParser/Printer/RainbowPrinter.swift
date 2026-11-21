@@ -34,8 +34,9 @@ struct RainbowPrinter: Sendable {
 
         var header = indent + node.name
         let emitConstructor = !isTriggerNodeName(node.name)
+        let emitParentheses = !node.parameters.isEmpty || (node.block == nil && emitConstructor)
 
-        if !node.parameters.isEmpty || emitConstructor {
+        if emitParentheses {
             if shouldBreakParameters(node) {
                 header += "("
                 parts.append(header)

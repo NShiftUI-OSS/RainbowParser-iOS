@@ -139,13 +139,22 @@ import Testing
         """
     )
     #expect(broken.diagnostics.first?.code == "rainbow.parser.childrenBrace")
+
+    let empty = try expectDecodeError(
+        """
+        Screen() {
+          Text(text: "A")
+        }
+        """
+    )
+    #expect(empty.diagnostics.first?.code == "rainbow.parser.emptyConstructorBlock")
 }
 
 @Test func parserPreservesEmptyArgumentsAndBlocks() throws {
     let document = try RainbowDecoder().decode(
         """
-        Root() {
-          EmptyBlock() {}
+        Root {
+          EmptyBlock {}
           Leaf
         }
         """
@@ -237,7 +246,7 @@ import Testing
 }
 
 @Test func parserReportsMissingClosingBlockBrace() throws {
-    let error = try expectDecodeError("Screen() { Button")
+    let error = try expectDecodeError("Screen { Button")
 
     #expect(error.diagnostics.first?.message == "Expected '}' after block.")
 }
@@ -272,7 +281,7 @@ import Testing
 }
 
 @Test func parserRecoversFromUnexpectedTokenInsideBlock() throws {
-    let error = try expectDecodeError("Root() { ) ( Child }")
+    let error = try expectDecodeError("Root { ) ( Child }")
 
     #expect(error.diagnostics.first?.message == "Expected node name.")
 }
