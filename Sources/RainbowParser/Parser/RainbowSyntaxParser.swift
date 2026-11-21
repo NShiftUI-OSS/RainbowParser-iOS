@@ -105,19 +105,13 @@ struct RainbowSyntaxParser {
         var anchor = previous.range.end.line
         let block: RainbowBlock?
         if check(.leftBrace) {
-            if !hadParentheses {
+            if peek.range.start.line != anchor {
                 diagnostics.append(
                     RainbowDiagnostic(
                         code: "rainbow.parser.childrenBrace",
-                        message: "A children block belongs after '()', on the same line as ')'.",
-                        range: peek.range
-                    )
-                )
-            } else if peek.range.start.line != anchor {
-                diagnostics.append(
-                    RainbowDiagnostic(
-                        code: "rainbow.parser.childrenBrace",
-                        message: "The children block must open on the same line as ')'.",
+                        message: hadParentheses
+                            ? "The children block must open on the same line as ')'."
+                            : "The children block must open on the same line as the name.",
                         range: peek.range
                     )
                 )

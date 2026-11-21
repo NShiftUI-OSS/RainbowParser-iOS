@@ -112,6 +112,35 @@ import Testing
     ])
 }
 
+@Test func parserAllowsChildrenBlockWithoutEmptyParentheses() throws {
+    let document = try RainbowDecoder().decode(
+        """
+        Screen {
+          Card {
+            Text(text: "A")
+          }
+        }
+        """
+    )
+
+    let screen = try #require(document.nodes.first)
+    #expect(screen.name == "Screen")
+    #expect(screen.parameters.isEmpty)
+    #expect(screen.hasBlock)
+    #expect(screen.children.first?.name == "Card")
+    #expect(screen.children.first?.hasBlock == true)
+
+    let broken = try expectDecodeError(
+        """
+        Screen
+        {
+          Text(text: "A")
+        }
+        """
+    )
+    #expect(broken.diagnostics.first?.code == "rainbow.parser.childrenBrace")
+}
+
 @Test func parserPreservesEmptyArgumentsAndBlocks() throws {
     let document = try RainbowDecoder().decode(
         """
