@@ -39,8 +39,8 @@ import Testing
                         RainbowParameter(name: "title", value: .string("Entrar")),
                         RainbowParameter(name: "variant", value: .identifier("primary")),
                     ],
-                    children: [
-                        RainbowNode(name: "OnTap", children: [
+                    events: [
+                        RainbowTrigger(name: "OnTap", events: [
                             RainbowNode(name: "Navigate"),
                         ]),
                     ]
@@ -56,7 +56,8 @@ import Testing
               Button(
                 title: "Entrar",
                 variant: .primary
-              ) {
+              )
+              .events {
                 OnTap {
                   Navigate()
                 }
@@ -138,12 +139,13 @@ import Testing
 
 @Test func parserFacadeEncodesAndDecodes() throws {
     let parser = RainbowParser()
-    let source = #"Button(title: "Entrar") { OnTap {} }"#
+    let source = "Button(title: \"Entrar\")\n.events {\n  OnTap {\n  }\n}"
     let document = try parser.decode(source)
 
     #expect(RainbowParserVersion.current == "0.2.0-beta.1")
     #expect(parser.encode(document) == """
-    Button(title: "Entrar") {
+    Button(title: "Entrar")
+    .events {
       OnTap {
       }
     }

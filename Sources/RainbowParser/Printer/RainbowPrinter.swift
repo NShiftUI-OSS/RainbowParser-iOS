@@ -63,26 +63,84 @@ struct RainbowPrinter: Sendable {
             parts.append(header)
         }
 
-        guard let block = node.block else {
-            return parts.joined(separator: style.newline)
+        if let block = node.block {
+            if var last = parts.popLast() {
+                last += " {"
+                parts.append(last)
+            }
+
+            if block.children.isEmpty {
+                parts.append(indent + "}")
+            } else {
+                let children = block.children
+                    .map { printNode($0, level: level + 1) }
+                    .joined(separator: style.newline + style.newline)
+                parts.append(children)
+                parts.append(indent + "}")
+            }
         }
 
-        if var last = parts.popLast() {
-            last += " {"
-            parts.append(last)
-        }
-
-        if block.children.isEmpty {
-            parts.append(indent + "}")
-        } else {
-            let children = block.children
-                .map { printNode($0, level: level + 1) }
-                .joined(separator: style.newline + style.newline)
-            parts.append(children)
-            parts.append(indent + "}")
-        }
-
+        pushModifiers(&parts, node, level: level)
         return parts.joined(separator: style.newline)
+    }
+
+    private func pushModifiers(_ parts: inout [String], _ node: RainbowNode, level: Int) {
+        let indent = indentation(level)
+        if let id = node.id {
+            parts.append("\(indent).id(\"\(escape(id))\")")
+        }
+        if !node.style.isEmpty {
+            parts.append(printStyleModifier(node.style, level: level))
+        }
+        if !node.events.isEmpty {
+            parts.append("\(indent).events {")
+            let triggerIndent = indentation(level + 1)
+            for trigger in node.events {
+                pushLeading(&parts, trigger.leading, level: level + 1)
+                parts.append("\(triggerIndent)\(trigger.name) {")
+                for event in trigger.events {
+                    parts.append(printNode(event, level: level + 2))
+                }
+                parts.append("\(triggerIndent)}")
+            }
+            parts.append("\(indent)}")
+        }
+        if !node.slots.isEmpty {
+            parts.append("\(indent).slots {")
+            let slotIndent = indentation(level + 1)
+            for slot in node.slots {
+                pushLeading(&parts, slot.leading, level: level + 1)
+                parts.append("\(slotIndent)\(slot.name) {")
+                for plugin in slot.plugins {
+                    parts.append(printNode(plugin, level: level + 2))
+                }
+                parts.append("\(slotIndent)}")
+            }
+            parts.append("\(indent)}")
+        }
+    }
+
+    private func printStyleModifier(_ parameters: [RainbowParameter], level: Int) -> String {
+        let indent = indentation(level)
+        let complex = parameters.count >= 2 || parameters.contains { valueNeedsBreak($0.value) }
+        if !complex {
+            let inline = parameters
+                .map { printParameterInline($0, continuationIndent: indentation(level + 1)) }
+                .joined(separator: ", ")
+            return "\(indent).style(\(inline))"
+        }
+        var lines = ["\(indent).style("]
+        let inner = indentation(level + 1)
+        for (index, parameter) in parameters.enumerated() {
+            var entry = printParameterLines(parameter, indent: inner)
+            if index != parameters.count - 1, var last = entry.popLast() {
+                last += ","
+                entry.append(last)
+            }
+            lines.append(contentsOf: entry)
+        }
+        lines.append("\(indent))")
+        return lines.joined(separator: style.newline)
     }
 
     private func printParameterLines(_ parameter: RainbowParameter, indent: String) -> [String] {
@@ -145,6 +203,8 @@ struct RainbowPrinter: Sendable {
                 .joined(separator: ", ") + "]"
         case let .object(entries):
             return printObject(entries, continuationIndent: continuationIndent)
+        case let .plugins(plugins):
+            return printPluginList(plugins, continuationIndent: continuationIndent)
         case .null:
             return "null"
         }
@@ -241,6 +301,18 @@ struct RainbowPrinter: Sendable {
 
         return output
     }
+
+    private func printPluginList(_ plugins: [RainbowNode], continuationIndent: String) -> String {
+        if plugins.isEmpty {
+            return "{}"
+        }
+        let unit = style.indentation.isEmpty ? 1 : style.indentation.count
+        let level = continuationIndent.count / unit + 1
+        var lines = ["{"]
+        lines.append(contentsOf: plugins.map { printNode($0, level: level) })
+        lines.append(continuationIndent + "}")
+        return lines.joined(separator: style.newline)
+    }
 }
 
 private func shouldBreakParameters(_ node: RainbowNode) -> Bool {
@@ -260,6 +332,8 @@ private func valueNeedsBreak(_ value: RainbowValue) -> Bool {
         return objectNeedsBreak(entries)
     case let .array(values):
         return values.contains { valueNeedsBreak($0) }
+    case .plugins:
+        return true
     default:
         return false
     }

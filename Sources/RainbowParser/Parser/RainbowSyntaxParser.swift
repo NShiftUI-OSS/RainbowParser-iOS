@@ -31,7 +31,11 @@ struct RainbowSyntaxParser {
                     name: node.name,
                     parameters: node.parameters,
                     block: node.block,
-                    leading: leading
+                    leading: leading,
+                    id: node.id,
+                    style: node.style,
+                    events: node.events,
+                    slots: node.slots
                 )
                 nodes.append(node)
             } else {
@@ -90,21 +94,331 @@ struct RainbowSyntaxParser {
 
         advance()
 
+        let hadParentheses = match(.leftParen)
         let parameters: [RainbowParameter]
-        if match(.leftParen) {
+        if hadParentheses {
             parameters = parseArguments()
         } else {
             parameters = []
         }
 
+        var anchor = previous.range.end.line
         let block: RainbowBlock?
-        if match(.leftBrace) {
+        if check(.leftBrace) {
+            if !hadParentheses {
+                diagnostics.append(
+                    RainbowDiagnostic(
+                        code: "rainbow.parser.childrenBrace",
+                        message: "A children block belongs after '()', on the same line as ')'.",
+                        range: peek.range
+                    )
+                )
+            } else if peek.range.start.line != anchor {
+                diagnostics.append(
+                    RainbowDiagnostic(
+                        code: "rainbow.parser.childrenBrace",
+                        message: "The children block must open on the same line as ')'.",
+                        range: peek.range
+                    )
+                )
+            }
+            advance()
             block = parseBlock()
+            anchor = previous.range.end.line
         } else {
             block = nil
         }
 
-        return RainbowNode(name: name, parameters: parameters, block: block)
+        let modifiers = parseModifiers(anchor: anchor)
+        return RainbowNode(
+            name: name,
+            parameters: parameters,
+            block: block,
+            id: modifiers.id,
+            style: modifiers.style,
+            events: modifiers.events,
+            slots: modifiers.slots
+        )
+    }
+
+    private struct ParsedModifiers {
+        var id: String?
+        var style: [RainbowParameter] = []
+        var events: [RainbowTrigger] = []
+        var slots: [RainbowSlot] = []
+    }
+
+    private mutating func parseModifiers(anchor initialAnchor: Int) -> ParsedModifiers {
+        var anchor = initialAnchor
+        var parsed = ParsedModifiers()
+        var seen: [String] = []
+
+        while true {
+            if case .comment = peek.kind {
+                if commentIntroducesModifier() {
+                    diagnostics.append(
+                        RainbowDiagnostic(
+                            code: "rainbow.parser.modifierSpacing",
+                            message: "A comment cannot sit between a plugin and its view modifier.",
+                            range: peek.range
+                        )
+                    )
+                    advance()
+                    continue
+                }
+                break
+            }
+
+            guard case let .dotIdentifier(modifier) = peek.kind else {
+                break
+            }
+            let known = modifier == "id" || modifier == "style" || modifier == "events" || modifier == "slots"
+            let line = peek.range.start.line
+            if !known {
+                if line <= anchor + 1 {
+                    diagnostics.append(
+                        RainbowDiagnostic(
+                            code: "rainbow.parser.unknownModifier",
+                            message: "Unknown view modifier '.\(modifier)'.",
+                            range: peek.range
+                        )
+                    )
+                    advance()
+                    continue
+                }
+                break
+            }
+
+            if line == anchor {
+                diagnostics.append(
+                    RainbowDiagnostic(
+                        code: "rainbow.parser.modifierSpacing",
+                        message: "'.\(modifier)' must start on the line below the plugin.",
+                        range: peek.range
+                    )
+                )
+            } else if line > anchor + 1 {
+                diagnostics.append(
+                    RainbowDiagnostic(
+                        code: "rainbow.parser.modifierSpacing",
+                        message: "'.\(modifier)' must be on the next line, with no blank line above it.",
+                        range: peek.range
+                    )
+                )
+            }
+            if seen.contains(modifier) {
+                diagnostics.append(
+                    RainbowDiagnostic(
+                        code: "rainbow.parser.duplicateModifier",
+                        message: "'.\(modifier)' can be written only once on a plugin.",
+                        range: peek.range
+                    )
+                )
+            }
+            seen.append(modifier)
+            advance()
+
+            switch modifier {
+            case "id":
+                parsed.id = parseIdModifier()
+            case "style":
+                parsed.style = parseStyleModifier()
+            case "events":
+                parsed.events = parseEventsModifier()
+            case "slots":
+                parsed.slots = parseSlotsModifier()
+            default:
+                break
+            }
+            anchor = previous.range.end.line
+        }
+
+        return parsed
+    }
+
+    private mutating func parseIdModifier() -> String? {
+        consume(.leftParen, message: "Expected '(' after '.id'.")
+        let id: String?
+        if case let .string(value) = peek.kind {
+            id = value
+            advance()
+        } else {
+            appendUnexpectedToken(message: "Expected a string inside '.id(\"...\")'.")
+            id = nil
+        }
+        consume(.rightParen, message: "Expected ')' after '.id'.")
+        return id
+    }
+
+    private mutating func parseStyleModifier() -> [RainbowParameter] {
+        guard match(.leftParen) else {
+            appendUnexpectedToken(message: "Expected '(' after '.style'.")
+            return []
+        }
+        return parseArguments()
+    }
+
+    private mutating func parseEventsModifier() -> [RainbowTrigger] {
+        guard braceOnSameLine("'.events'") else {
+            return []
+        }
+        advance()
+        var triggers: [RainbowTrigger] = []
+        while !significantIsRightBrace && !isAtEnd {
+            let leading = takeLeadingTrivia()
+            if var trigger = parseTrigger() {
+                trigger = RainbowTrigger(name: trigger.name, events: trigger.events, leading: leading)
+                triggers.append(trigger)
+            } else {
+                synchronizeNode()
+            }
+        }
+        _ = takeLeadingTrivia()
+        consume(.rightBrace, message: "Expected '}' after '.events'.")
+        return triggers
+    }
+
+    private mutating func parseTrigger() -> RainbowTrigger? {
+        guard case let .identifier(name) = peek.kind else {
+            appendUnexpectedToken(message: "Expected a trigger name inside '.events'.")
+            return nil
+        }
+        advance()
+        if check(.leftParen) {
+            advance()
+            _ = parseArguments()
+        }
+        guard braceOnSameLine("a trigger") else {
+            return nil
+        }
+        advance()
+        let events = parseEventCalls()
+        return RainbowTrigger(name: name, events: events)
+    }
+
+    private mutating func parseEventCalls() -> [RainbowNode] {
+        var events: [RainbowNode] = []
+        while !significantIsRightBrace && !isAtEnd {
+            let leading = takeLeadingTrivia()
+            if let event = parseNode() {
+                if event.block != nil || !event.style.isEmpty || !event.events.isEmpty || !event.slots.isEmpty {
+                    diagnostics.append(
+                        RainbowDiagnostic(
+                            code: "rainbow.parser.eventShape",
+                            message: "An event only accepts metadata in parentheses and an optional '.id'.",
+                            range: previous.range
+                        )
+                    )
+                }
+                events.append(
+                    RainbowNode(
+                        name: event.name,
+                        parameters: event.parameters,
+                        block: event.block,
+                        leading: leading,
+                        id: event.id,
+                        style: event.style,
+                        events: event.events,
+                        slots: event.slots
+                    )
+                )
+            } else {
+                synchronizeNode()
+            }
+        }
+        _ = takeLeadingTrivia()
+        consume(.rightBrace, message: "Expected '}' after trigger.")
+        return events
+    }
+
+    private mutating func parseSlotsModifier() -> [RainbowSlot] {
+        guard braceOnSameLine("'.slots'") else {
+            return []
+        }
+        advance()
+        var slots: [RainbowSlot] = []
+        while !significantIsRightBrace && !isAtEnd {
+            let leading = takeLeadingTrivia()
+            if let slot = parseSlot() {
+                slots.append(RainbowSlot(name: slot.name, plugins: slot.plugins, leading: leading))
+            } else {
+                synchronizeNode()
+            }
+        }
+        _ = takeLeadingTrivia()
+        consume(.rightBrace, message: "Expected '}' after '.slots'.")
+        return slots
+    }
+
+    private mutating func parseSlot() -> RainbowSlot? {
+        guard case let .identifier(name) = peek.kind else {
+            appendUnexpectedToken(message: "Expected a slot name inside '.slots'.")
+            return nil
+        }
+        advance()
+        guard braceOnSameLine("a slot") else {
+            return nil
+        }
+        advance()
+        return RainbowSlot(name: name, plugins: parsePluginList())
+    }
+
+    private mutating func parsePluginList() -> [RainbowNode] {
+        var plugins: [RainbowNode] = []
+        while !significantIsRightBrace && !isAtEnd {
+            let leading = takeLeadingTrivia()
+            if let plugin = parseNode() {
+                plugins.append(
+                    RainbowNode(
+                        name: plugin.name,
+                        parameters: plugin.parameters,
+                        block: plugin.block,
+                        leading: leading,
+                        id: plugin.id,
+                        style: plugin.style,
+                        events: plugin.events,
+                        slots: plugin.slots
+                    )
+                )
+            } else {
+                synchronizeNode()
+            }
+        }
+        _ = takeLeadingTrivia()
+        consume(.rightBrace, message: "Expected '}' after plugins.")
+        return plugins
+    }
+
+    private mutating func braceOnSameLine(_ what: String) -> Bool {
+        guard check(.leftBrace) else {
+            appendUnexpectedToken(message: "Expected '{' on the same line as \(what).")
+            return false
+        }
+        if peek.range.start.line != previous.range.end.line {
+            diagnostics.append(
+                RainbowDiagnostic(
+                    code: "rainbow.parser.braceLine",
+                    message: "The '{' of \(what) must stay on the same line as its name.",
+                    range: peek.range
+                )
+            )
+        }
+        return true
+    }
+
+    private func commentIntroducesModifier() -> Bool {
+        var index = current
+        while index < tokens.count {
+            switch tokens[index].kind {
+            case .comment:
+                index += 1
+            case let .dotIdentifier(name) where name == "id" || name == "style" || name == "events" || name == "slots":
+                return true
+            default:
+                return false
+            }
+        }
+        return false
     }
 
     private mutating func parseArguments() -> [RainbowParameter] {
@@ -176,7 +490,11 @@ struct RainbowSyntaxParser {
                     name: child.name,
                     parameters: child.parameters,
                     block: child.block,
-                    leading: leading
+                    leading: leading,
+                    id: child.id,
+                    style: child.style,
+                    events: child.events,
+                    slots: child.slots
                 )
                 children.append(child)
             } else {
@@ -224,6 +542,9 @@ struct RainbowSyntaxParser {
         case .leftParen:
             advance()
             return parseObject()
+        case .leftBrace:
+            advance()
+            return .plugins(parsePluginList())
         default:
             appendUnexpectedToken(message: "Expected value.")
             return nil

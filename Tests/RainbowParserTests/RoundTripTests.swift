@@ -2,7 +2,7 @@ import Testing
 @testable import RainbowParser
 
 @Test func canonicalRoundTripPreservesStructure() throws {
-    let source = #"Button( title:"Entrar", meta:(id:"login") ){OnTap{Navigate(to:"Home")}}"#
+    let source = "Button( title:\"Entrar\", meta:(id:\"login\") )\n.events {\n  OnTap {\n    Navigate(to:\"Home\")\n  }\n}"
     let parser = RainbowParser()
 
     let firstDocument = try parser.decode(source)
@@ -14,7 +14,8 @@ import Testing
     Button(
       title: "Entrar",
       meta: (id: "login")
-    ) {
+    )
+    .events {
       OnTap {
         Navigate(to: "Home")
       }
@@ -28,7 +29,7 @@ import Testing
             """
             use Screen@1.0.0
             // root comment
-            Screen {
+            Screen() {
               Text(text: "a")
               // between plugins
               Button(title: "b")
@@ -45,7 +46,8 @@ import Testing
     let parser = RainbowParser()
     let source = """
     Screen(name: "Home") {
-      Button(title: "Entrar") {
+      Button(title: "Entrar")
+      .events {
         OnTap {
           Navigate(to: "Dashboard")
         }

@@ -9,7 +9,8 @@ import Testing
         use ShowToast@1.3.0
 
         Screen(name: "Home") {
-          Button(title: "Hi") {
+          Button(title: "Hi")
+          .events {
             OnTap {
               ShowToast(message: "ok")
             }
@@ -30,7 +31,8 @@ import Testing
     let document = try RainbowDecoder().decode(
         """
         Screen(name: "Home") {
-          Button(title: "Entrar", variant: .primary) {
+          Button(title: "Entrar", variant: .primary)
+          .events {
             OnTap {
               Navigate(to: "Dashboard")
             }
@@ -53,10 +55,10 @@ import Testing
                         RainbowParameter(name: "title", value: .string("Entrar")),
                         RainbowParameter(name: "variant", value: .identifier("primary")),
                     ],
-                    children: [
-                        RainbowNode(
+                    events: [
+                        RainbowTrigger(
                             name: "OnTap",
-                            children: [
+                            events: [
                                 RainbowNode(
                                     name: "Navigate",
                                     parameters: [
@@ -114,7 +116,7 @@ import Testing
     let document = try RainbowDecoder().decode(
         """
         Root() {
-          EmptyBlock {}
+          EmptyBlock() {}
           Leaf
         }
         """
@@ -206,7 +208,7 @@ import Testing
 }
 
 @Test func parserReportsMissingClosingBlockBrace() throws {
-    let error = try expectDecodeError("Screen { Button")
+    let error = try expectDecodeError("Screen() { Button")
 
     #expect(error.diagnostics.first?.message == "Expected '}' after block.")
 }
@@ -241,7 +243,7 @@ import Testing
 }
 
 @Test func parserRecoversFromUnexpectedTokenInsideBlock() throws {
-    let error = try expectDecodeError("Root { ) ( Child }")
+    let error = try expectDecodeError("Root() { ) ( Child }")
 
     #expect(error.diagnostics.first?.message == "Expected node name.")
 }
