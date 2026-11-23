@@ -7,7 +7,7 @@
 
 Não coloque validação NShiftUI neste pacote. Não implemente substituição de templates; o payload mobile chega concreto.
 
-## Regra do DSL (beta)
+## Regra do DSL
 
 ```text
 () = parâmetros / configuração
@@ -16,7 +16,7 @@ Não coloque validação NShiftUI neste pacote. Não implemente substituição d
 
 Parâmetros são nomeados: `Button(title: "Entrar", variant: .primary)`.
 
-Não usar nós aninhados como valor de parâmetro neste beta:
+Não usar nós aninhados como valor de parâmetro nesta versão:
 
 ```rainbow
 # inválido no escopo atual
@@ -25,20 +25,9 @@ Button(label: Text(value: "Entrar"))
 
 Composição via blocks.
 
-## Gramática (alto nível)
+## Gramática concreta
 
-```text
-Document   = Node*
-Node       = Identifier Arguments? Block?
-Arguments  = "(" ParameterList? ")"
-Parameter  = Identifier ":" Value
-Block      = "{" Node* "}"
-Value      = String | Number | Bool | EnumIdentifier | Array | Object | Null
-Object     = "(" (ObjectEntry ("," ObjectEntry)*)? ")"
-EnumIdentifier = "." Identifier
-```
-
-Trailing commas em arrays são aceitos. Em parâmetros e entradas de objeto, não.
+A [especificação compartilhada](https://github.com/NShiftUI-OSS/RainbowParser-Rust/blob/main/spec/grammar.md) documenta os pins `use`, os modificadores, as listas de plugins e os corpos `@LANG`. Um nó com filhos e sem parâmetros é escrito `Screen { Spinner() }`. O parser preserva os comentários de linha associados ao próximo elemento.
 
 ## Código Swift
 

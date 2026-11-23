@@ -15,7 +15,7 @@
 | `Public/RainbowParser.swift` | public | Facade decode/encode |
 | `Public/RainbowDecoder.swift` | public | Lexer → Parser |
 | `Public/RainbowEncoder.swift` | public | Printer |
-| `Public/RainbowParserVersion.swift` | public | `current = "0.1.0-beta.1"` |
+| `Public/RainbowParserVersion.swift` | public | `current = "1.0.0"` |
 | `AST/RainbowDocument.swift` | public | `nodes: [RainbowNode]` |
 | `AST/RainbowNode.swift` | public | `name`, `parameters`, `block`; `children`/`hasBlock` |
 | `AST/RainbowBlock.swift` | public | `children` |

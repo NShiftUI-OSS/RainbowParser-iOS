@@ -8,7 +8,7 @@
 | [Map.md](./Map.md) | Localizar arquivo por responsabilidade |
 | [API.md](./API.md) | Superfície pública e contratos de decode/encode |
 | [Conventions.md](./Conventions.md) | Regras de DSL, estilo e o que não fazer |
-| [Decisions.md](./Decisions.md) | Decisões de design e escopo beta (inclui D8: placeholders só no Rust) |
+| [Decisions.md](./Decisions.md) | Decisões de design e escopo atual (inclui D8: placeholders só no Rust) |
 | [Update.md](./Update.md) | Changelog do harness (não do produto) |
 
 ## Fontes de verdade

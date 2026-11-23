@@ -8,10 +8,10 @@ The semantic meaning of nodes such as `Screen`, `Button`, `OnTap` or `SendHTTPRe
 
 ## Version
 
-Current beta:
+Current stable release:
 
 ```text
-0.1.0-beta.1
+1.0.0
 ```
 
 Runtime version is exposed as:
@@ -20,12 +20,13 @@ Runtime version is exposed as:
 RainbowParserVersion.current
 ```
 
-Swift Package Manager resolves package releases from Git tags. To publish this exact beta version, tag the repository with:
+Add the published package in Swift Package Manager:
 
-```bash
-git tag 0.1.0-beta.1
-git push origin 0.1.0-beta.1
+```swift
+.package(url: "https://github.com/NShiftUI-OSS/RainbowParser-iOS.git", exact: "1.0.0")
 ```
+
+Add the `RainbowParser` product to your target. GitHub Actions publishes the Git tag `v1.0.0`.
 
 ## Requirements
 
@@ -83,9 +84,9 @@ This package also does **not** expand template holes.
 
 `#{Name}` placeholders (`use #{Name}`, placeholder node names, placeholder values, `@LANG(#{Name})`) and the `expand` API belong exclusively to **RainbowParser-Rust**, the global backend API. iOS receives **concrete** Rainbow after the backend substitution step.
 
-## DSL Rules For This Beta
+## DSL Rules
 
-The v0.1 beta follows one central rule:
+The grammar follows one central rule:
 
 ```text
 () = parameters/configuration
@@ -114,13 +115,13 @@ Parameters are named:
 Button(title: "Entrar", variant: .primary)
 ```
 
-This beta does not support plugins, components, triggers or events as inline parameter values:
+The grammar does not support plugins, components, triggers or events as inline parameter values:
 
 ```rainbow
 Button(label: Text(value: "Entrar"))
 ```
 
-Composition should be represented through blocks instead.
+Use a block for child nodes. Arrays of plugin nodes are supported for fields such as scroll headers and footers, and the concrete grammar is defined in the [Rainbow specification](https://github.com/NShiftUI-OSS/RainbowParser-Rust/blob/main/spec/grammar.md).
 
 ## Supported Syntax
 
@@ -311,7 +312,7 @@ Button(title: "Entrar") {
 }
 ```
 
-Plugins and events with no parameters still print as constructors (`Spinner()`). An object with two or more fields breaks, and the closing `)` lines up with the parameter that opened it:
+Plugins and events with no parameters and no children print as constructors (`Spinner()`). A node with children and no parameters omits the parentheses (`Screen { Spinner() }`). An object with two or more fields breaks, and the closing `)` lines up with the parameter that opened it:
 
 ```rainbow
 VerticalStack(
@@ -322,7 +323,7 @@ VerticalStack(
 )
 ```
 
-This is intentional for the beta. Lossless round-trip formatting, comments and trivia preservation are out of scope for `0.1.0-beta.1`.
+The encoder preserves leading `//` comments attached to declarations, nodes and parameters. Formatting is canonical.
 
 ## Thread Safety And Concurrency
 
@@ -394,21 +395,11 @@ In Xcode:
 2. Select the generated package scheme, usually named `RainbowParser-Package` or similar.
 3. Run tests with `Command + U`.
 
-For GitLab CI, prefer `swift test` over a manually maintained Xcode scheme unless the project later needs iOS simulator specific testing.
-
-## GitLab CODEOWNERS
-
-The project includes a root `CODEOWNERS` file:
-
-```text
-* @arthur.porto
-```
-
-This makes GitLab assign project ownership for all files to the configured user.
+The GitHub Actions **Release** workflow runs `swift test` before publishing.
 
 ## Release Scope
 
-Included in `0.1.0-beta.1`:
+Included in `1.0.0`:
 
 - Syntax AST.
 - Lexer.
@@ -417,7 +408,7 @@ Included in `0.1.0-beta.1`:
 - Diagnostics.
 - Public decode/encode API.
 - Tests and coverage.
-- CODEOWNERS.
+- Leading line comments and separate `.metadata`, `.style`, `.events`, and `.slots` modifiers.
 
 Out of scope:
 
@@ -429,7 +420,6 @@ Out of scope:
 - Conditionals.
 - Loops.
 - Lossless formatting.
-- Comments.
 - Template placeholders (`#{Name}`) and expand (Rust backend only).
 
 ## Intended Integration With NShiftUI
@@ -483,4 +473,4 @@ Responsibilities that should stay outside this package:
 
 ## License
 
-Internal project license is not declared in this beta.
+[MIT](LICENSE).

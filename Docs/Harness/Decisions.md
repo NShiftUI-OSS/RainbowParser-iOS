@@ -12,7 +12,7 @@
 
 **Decisão:** parâmetros em `()`; filhos/fluxo em `{}`.
 
-**Por quê:** alinhamento com sensação SwiftUI/Compose e regra única no beta.
+**Por quê:** alinhamento com sensação SwiftUI/Compose e regra única da gramática.
 
 ## D3 — Encode canônico (com leading trivia)
 
@@ -23,7 +23,7 @@ objeto. Um campo só fica compacto. Comentários `//` de linha inteira
 imediatamente antes de `use` / nó / parâmetro são preservados (leading trivia).
 Comentários no fim da mesma linha que código ficam fora do v1.
 
-**Por quê:** escopo `0.1.0-beta.1`; round-trip estrutural é suficiente.
+**Por quê:** round-trip estrutural é suficiente.
 
 ## D4 — Zero dependências
 
@@ -60,6 +60,6 @@ Comentários no fim da mesma linha que código ficam fora do v1.
 - Gramática mobile: `use Name@MAJOR.MINOR.PATCH`, nomes de nó identificadores, enum `.name`, `@LANG(...)` com body de linguagem real.
 - O lexer pode ainda reconhecer `@LANG(#{blob})` como corpo tagged (legado do scanner compartilhado); isso **não** é API de substituição. Consumidores mobile não devem depender de furos restantes.
 
-## Fora de escopo (beta)
+## Fora de escopo
 
 Plugins, macros, expressões, condicionais, loops, trailing end-of-line comments, registry semântico, pretty-print embutido de `@LANG` (Rust-only), **expand / templates `#{Name}`** (Rust backend-only).

@@ -1,6 +1,6 @@
 # RainbowParser — Agent Harness
 
-Pacote Swift 6 de **sintaxe** do DSL Rainbow (SDUI textual). Versão `0.1.0-beta.1`.
+Pacote Swift 6 de **sintaxe** do DSL Rainbow (SDUI textual). Versão `1.0.0`.
 Produto: `RainbowParser`. Zero dependências externas.
 
 **Não** valida semântica NShiftUI (`Screen`, `Button`, `OnTap`, etc.). Isso vive em NShiftUI / NShiftUIKit.
@@ -56,7 +56,7 @@ Direção correta: consumidor → parser. Semântica e render ficam fora daqui.
 1. Sintaxe apenas — sem registry de componentes/triggers/actions.
 2. AST genérica e `Sendable`; encode canônico (não lossless).
 3. Typed throws: `throws(RainbowParseError)`.
-4. Não alterar escopo beta: sem macros, expressões, condicionais, loops, comments.
+4. Não alterar escopo atual: sem macros, expressões, condicionais, loops.
 5. Preferir testes + `swift test` após mudanças de sintaxe.
 6. Rainbow **concreto** apenas. Furos `#{Name}` e expand ficam no crate Rust (backend). Ver D8 em `Docs/Harness/Decisions.md`.
 
